@@ -1,0 +1,27 @@
+{
+  "name": "nodeHue",
+  "version": "0.0.1",
+  "description": "App for checking build and changing hue lights",
+  "main": "app.js",
+  "dependencies": {
+    "colors": "^1.0.3",
+    "express": "^4.10.6",
+    "hjs": "*",
+    "junk": "^1.0.0",
+    "less-middleware": "^1.0.4",
+    "nconf": "^0.7.1",
+    "nedb": "^1.1.1",
+    "q": "^1.1.2",
+    "serve-static": "^1.7.1",
+    "socket.io": "^1.2.1"
+  },
+  "devDependencies": {
+    "gulp": "^3.8.10",
+    "gulp-shell": "^0.3.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "matthew osborn",
+  "license": "ISC"
+}

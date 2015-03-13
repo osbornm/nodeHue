@@ -1,0 +1,18 @@
+{
+  "name": "nodeHue",
+  "version": "0.0.1",
+  "authors": [
+    "Matthew Osborn <matthew@osbornm.com>"
+  ],
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "knockout": "~3.2.0",
+    "requirejs": "~2.1.15"
+  }
+}

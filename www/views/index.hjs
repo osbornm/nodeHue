@@ -1,0 +1,11 @@
+{{<layout}}
+    {{$content}}
+        <h1>Monitoring the following Projects</h1>
+        {{#projects}}
+            {{> project}}
+        {{/projects}}
+    {{/content}}
+    {{$scripts}}
+        <script src="/scripts/index.js"></script>
+    {{/scripts}}
+{{/layout}}

@@ -1,0 +1,1 @@
+<li id="{{_id}}">{{name}} - {{currentStatus}}</li>
