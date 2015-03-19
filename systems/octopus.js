@@ -70,7 +70,7 @@ var Octopus = function (options) {
                 // TODO: consider filtering enviroments
 
                 var isDeploying = tasks.some(function (t) {
-                    return t.Name === "Deploy" && !t.IsCompleted
+                    return t.State !== "Success" && t.CompletedTime === null
                 });
 
                 if(isDeploying) {
