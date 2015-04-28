@@ -2,7 +2,7 @@
 
 var colors = require("colors"),
     config = require("../config"),
-    console = require("../console"),
+    console = require("../console");
 
 var AppServicesProject = function () {
     'use strict';
