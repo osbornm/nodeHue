@@ -56,7 +56,7 @@ var PlatformProject = function () {
                 deferred.resolve(deployState);
             } else {
                 self.teamCity.getState().then(function (buildState) {
-                    deferred.resolve(buildState);
+                    deferred.resolve(buildState.status);
                 });
             }
         });

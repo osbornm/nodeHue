@@ -1,10 +1,11 @@
 /*jslint node: true */
 
-var q = require("q"),
-    config = require("../config"),
-    request = require("request"),
+var config = require("../config"),
+    rest = require("rest"),
+    mime = require('rest/interceptor/mime'),
+    basicAuth = require("rest/interceptor/basicAuth"),
     console = require("../console"),
-    xmlParser = require("xml2js"),
+    _ = require('lodash'),
     colors = require("colors");
 
 /**
@@ -18,15 +19,29 @@ var q = require("q"),
 var TeamCity = function (options) {
     'use strict';
     var self = this;
+
     self.baseUrl = options.baseUrl;
     self.userName = options.userName;
     self.password = options.password;
     self.projectName = options.projectName;
+    self.projectNames = options.projectNames;
     self.previouslyFailing = false;
     self.currentRequest;
+    self.priorStates = {};
+    
+    self.client = rest.wrap(
+        basicAuth, 
+        { 
+            username: self.userName, 
+            password: self.password 
+        }).wrap(mime);
+
+    self.getStatusEndpoint = function() {
+        return self.baseUrl + "/httpAuth/app/rest/cctray/projects.xml" ;
+    }  
 
     self.printError = function (message) {
-        console.error(colors.red("[TeamCity '%s'] %s"), self.projectName, message);
+        console.error(colors.red("[TeamCity '%s'] %s"), self.baseUrl, message);
     };
 
     self.cancel = function () {
@@ -35,72 +50,118 @@ var TeamCity = function (options) {
         }
     };
 
-    self.getState = function () {
-        var deferred = q.defer(),
-            result;
-        self.currentRequest = request({
-                url: self.baseUrl + "/httpAuth/app/rest/cctray/projects.xml",
-                auth: {
-                    username: self.userName,
-                    password: self.password
-                },
-                headers: {
-                    "Content-Tpye": "application/json",
-                    accepts: "application/json"
-                }
-            },
-            function (error, response, body) {
-                if (response === null || response === undefined) {
-                    self.printError("response was NULL");
-                    deferred.resolve(config.get("projectStates:unknown"));
-                } else if (!error && response.statusCode < 300) {
-                    xmlParser.parseString(body, function (parserError, parserResult) {
-                        if (parserError) {
-                            self.printError("error parsing JSON");
-                            deferred.resolve(config.get("projectStates:unknown"));
-                        } else {
-                            var result,
-                                project,
-                                filteredProjects = parserResult.Projects.Project.filter(function (p) {
-                                    return p.$.name === self.projectName;
-                                }).map(function (p) {
-                                    return p.$;
-                                });
-                            if (filteredProjects.length === 1) {
-                                project = filteredProjects[0];
-                                if (project.activity === "Building") {
-                                    result = config.get("projectStates:building");
-                                } else if (project.activity === "Has pending changes") {
-                                    result = config.get("projectStates:queuedForBuild");
-                                } else if (project.activity === "Sleeping") {
-                                    if (project.lastBuildStatus === "Failure") {
-                                        result = config.get("projectStates:failure");
-                                        self.previouslyFailing = true;
-                                    } else {
-                                        if (self.previouslyFailing) {
-                                            result = config.get("projectStates:successFromFailure");
-                                        } else {
-                                            result = config.get("projectStates:success");
-                                        }
-                                        self.previouslyFailing = false;
-                                    }
-                                }
-                            } else {
-                                self.printError("could not find project");
-                                result = config.get("projectStates:unknown");
-                            }
-                            deferred.resolve(result);
-                        }
-                    });
+    self.getConfiguredStatus = function(project, priorState) {
+        var result
+
+        if (project.activity === "Building") {
+            result = config.get("projectStates:building");
+        } else if (project.activity === "Has pending changes") {
+            result = config.get("projectStates:queuedForBuild");
+        } else if (project.activity === "Sleeping") {
+            if (project.lastBuildStatus === "Failure") {
+                result = config.get("projectStates:failure");
+            } else {
+                if (priorState && priorState.lastBuildStatus === "Failure") {
+                    result = config.get("projectStates:successFromFailure");
                 } else {
-                    self.printError("unknown error");
-                    deferred.resolve(config.get("projectStates:unknown"));
+                    result = config.get("projectStates:success");
                 }
-            });
-        return deferred.promise;
+            }
+        }
+
+        return result;
+    }
+
+    self.makeUnknownState = function() {
+         return { "projectName": "not found", status: config.get("projectStates:unknown") }
+    }
+
+    self.getMultiState = function() {
+        if (!self.projectNames) {
+            self.printError("No projectName specified.");
+            return self.makeUnknownState();
+        }
+
+        return self.getMultiStateInner(self.projectNames);
+    }
+
+    self.getMultiStateInner = function(projectNames) {
+        return self.client({ 
+            path: self.getStatusEndpoint()
+        }).then(function(response) {
+            var responses = [];
+
+            if (response.status.code < 300) {
+                if (!response.entity.Project) {
+                    self.printError("Response did not have expected format");
+                    return responses;
+                }
+
+                return response.entity.Project.filter(function(project) {
+                    return _.includes(projectNames, project.name);
+                }).map(function(project) {
+
+                    var priorState = self.priorStates[project.name];
+                    var newStatus = self.getConfiguredStatus(project, priorState);
+                    self.priorStates[project.name] = project;
+
+                    return { 
+                        "projectName": project.name,
+                        status: newStatus
+                    };
+                });
+            } 
+            else {
+                self.printError("Request failed with status " + response.status.code);
+            }
+
+            return responses
+        }).then(function(projectResponses){
+            if (projectResponses.length === 0) {
+                self.printError("Could not find projects matching " + projectNames + " in returned status.");
+
+                return self.makeUnknownState();
+            }
+
+            return projectResponses;
+
+        }).catch(function(err) {
+            self.printError(err);
+            return self.makeUnknownState();
+        })  
     };
 
-    return self;
+
+    self.getState = function () {
+        if (!self.projectName) {
+            self.printError("No projectName specified.");
+            return self.makeUnknownState();
+        }
+
+        return self.getMultiStateInner([ self.projectName ])
+        .then(function(states) {
+            if (states.length > 0) {
+                return states[0];
+            }
+
+            self.printError("No states returned for project: " + self.projectName);
+            return self.makeUnknownState();
+        })
+    }
+    
+    self.buildProjectRequest = function() {
+        return {
+            url: self.getStatusEndpoint(),
+            auth: {
+                username: self.userName,
+                password: self.password
+            },
+            headers: {
+                "Content-Tpye": "application/json",
+                accepts: "application/json"
+            }
+        };
+    };
 }
 
 module.exports = TeamCity;
