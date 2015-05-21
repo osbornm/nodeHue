@@ -38,7 +38,7 @@ var PlatformApiProject = function () {
         if(self.noop) {
             return;
         }
-        return self.teamCity.getState();
+        return self.teamCity.getState().then(function(state) { return state.status; });
     }
 
     self.shutdown = function () {

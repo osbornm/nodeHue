@@ -67,7 +67,6 @@ var AppServicesProject = function () {
             var finalState = 'Success';
 
             projectStates.forEach(function(projectState) {
-                console.log(projectState);
                 var stateFn = self.transitionTable[finalState];
 
                 if (stateFn) {
