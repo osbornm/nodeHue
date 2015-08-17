@@ -31,7 +31,7 @@ var PlatformProject = function () {
         baseUrl: self.teamCityBaseUrl,
         userName: self.teamCityUserName,
         password:  self.teamCitypassword,
-        projectName: "Tinman :: CI"
+        projectName: "Tinman :: CI :: CI"
     });
 
     self.getState = function() {
