@@ -31,7 +31,7 @@ var PlatformApiProject = function () {
         baseUrl: self.teamCityBaseUrl,
         userName: self.teamCityUserName,
         password:  self.teamCitypassword,
-        projectName: "T3 :: API Tests"
+        projectName: "T3 :: API Tests (All)"
     });
 
     self.getState = function() {
