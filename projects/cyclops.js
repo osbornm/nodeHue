@@ -28,6 +28,7 @@ var CyclopsProject = function() {
   //Get the secrete stuff
   self.account = config.get("uiux:travis:account");
   self.token = config.get("uiux:travis:token");
+  self.baseUrl = config.get("uiux:travis:baseUrl");
 
   self.noop = false;
   if (!self.account && !self.repository && !self.token) {
@@ -37,13 +38,15 @@ var CyclopsProject = function() {
   self.cyclopsTravis = new tci({
     account: self.account,
     repository: "Cyclops",
-    token: self.token
+    token: self.token,
+    baseUrl: self.baseUrl
   });
 
   self.assetsTravis = new tci({
     account: self.account,
     repository: "AssetsServer",
-    token: self.token
+    token: self.token,
+    baseUrl: self.baseUrl
   });
 
   self.getState = function() {
