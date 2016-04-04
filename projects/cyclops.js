@@ -14,12 +14,12 @@ var CyclopsProject = function() {
   self.icon = "";
   self.frequency = 10000;
   self.hueGroupId = "2";
-  // self.hueColors = {}
-  // self.hueColors[config.get('projectStates:success')] = [0.1934, 0.0547];
-  // self.hueColors[config.get('projectStates:successFromFailure')] = [0.1934, 0.0547];
-  // self.hueColors[config.get('projectStates:queuedForBuild')] = [1, 1];
-  // self.hueColors[config.get('projectStates:building')] = [1, 1];
-  // self.hueColors[config.get('projectStates:failure')] = [0.3648, 0.1507];
+  self.hueColors = {}
+  self.hueColors[config.get('projectStates:success')] = [0.1934, 0.0547];
+  self.hueColors[config.get('projectStates:successFromFailure')] = [0.1934, 0.0547];
+  self.hueColors[config.get('projectStates:queuedForBuild')] = [1, 1];
+  self.hueColors[config.get('projectStates:building')] = [1, 1];
+  self.hueColors[config.get('projectStates:failure')] = [0.3648, 0.1507];
 
   self.error = function(message) {
     console.error(colors.red("%s - %s"), self.name, message);
